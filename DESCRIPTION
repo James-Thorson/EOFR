@@ -1,0 +1,50 @@
+Package: EOFR
+Type: Package
+Title: Empirical Orthogonal Function Regression
+Version: 1.0.0
+Date: 2019-03-29
+Authors@R: person("James","Thorson", email="James.Thorson@noaa.gov", role=c("aut","cre"))
+Maintainer: James Thorson <James.Thorson@noaa.gov>
+Description: EOFR is an R package for conducting empirical orthogonal function regression.
+Imports:
+    graphics,
+    utils,
+    mapproj,
+    maptools,
+    deldir,
+    PBSmapping,
+    RANN,
+    stats,
+    colorspace,
+    RandomFields,
+    RandomFieldsUtils,
+    shape,
+    devtools,
+    mixtools,
+    sp, 
+    maps,
+    mapdata,
+    TMB,
+    abind,
+    MatrixModels,  
+    ThorsonUtilities,
+    TMBhelper
+Depends:
+    R (>= 3.1.0),
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown,
+    FishStatsUtils,
+    R.rsp
+Remotes:
+    james-thorson/FishStatsUtils,
+    james-thorson/utilities,
+    kaskr/TMB_contrib_R/TMBhelper
+License: GPL-3
+LazyData: yes
+BuildVignettes: yes
+RoxygenNote: 6.1.0
+URL: http://github.com/James-Thorson/VAST
+BugReports: http://github.com/James-Thorson/VAST/issues
+VignetteBuilder: R.rsp
