@@ -35,7 +35,7 @@
 make_model <-
 function( TmbData, Version, RhoConfig=c("Beta1"=0,"Beta2"=0,"Epsilon1"=0,"Epsilon2"=0), Method="Mesh", Npool=0,
   ConvergeTol=1, Use_REML=FALSE, loc_x=NULL, Parameters="generate", Random="generate", Map="generate",
-  DiagnosticDir=NULL, TmbDir=system.file("executables",package="VAST"), RunDir=getwd(), build_model=TRUE ){
+  DiagnosticDir=NULL, TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE ){
                                             
   # Extract Options and Options_vec (depends upon version)
   if( all(c("Options","Options_vec") %in% names(TmbData)) ){
