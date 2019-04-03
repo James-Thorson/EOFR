@@ -35,7 +35,7 @@
 make_model <-
 function( TmbData, Version, spatial_list, Parameters="generate", Random="generate", Map="generate",
   TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE,
-  use_REML=FALSE, Aniso=TRUE ){
+  use_REML=FALSE, Aniso=TRUE, Rank_expanded=FALSE ){
                                             
   # Compile TMB software
   file.copy( from=paste0(TmbDir,"/",Version,".cpp"), to=paste0(RunDir,"/",Version,".cpp"), overwrite=FALSE)
@@ -46,16 +46,16 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
 
   # Parameters
     # TmbData=TmbData
-  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = make_parameters( Version=Version, DataList=TmbData )
+  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = make_parameters( Version=Version, DataList=TmbData, Rank_expanded=Rank_expanded )
 
   # Which parameters are turned off
-  if( length(Map)==1 && Map=="generate" ) Map = make_map( DataList=TmbData, TmbParams=Parameters, Aniso=Aniso )
+  if( length(Map)==1 && Map=="generate" ) Map = make_map( DataList=TmbData, TmbParams=Parameters, Aniso=Aniso, Rank_expanded=Rank_expanded )
 
   # Which are random
   if( length(Random)==1 && Random=="generate" ){
     Random = c("epsiloninput_scf")
     if( use_REML==TRUE ){
-      Random = union( Random, c("beta_ct","beta_p","gamma_p") ) #
+      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k") ) #
     }
     Random = Random[which(Random %in% names(Parameters))]
     if( length(Random)==0) Random = NULL

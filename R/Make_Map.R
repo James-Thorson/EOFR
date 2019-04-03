@@ -1,6 +1,6 @@
 #' @export
 make_map <-
-function( DataList, TmbParams, Aniso=TRUE ){
+function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE ){
 
   # Local functions
   fix_value <- function( fixvalTF ){
@@ -19,12 +19,12 @@ function( DataList, TmbParams, Aniso=TRUE ){
 
   # Restrictions on loadings
   Map[["lambda_tf"]] = matrix( 1:(DataList$n_t*DataList$n_f), ncol=DataList$n_f )
-  #if( DataList$Cross_correlation==TRUE ){
-  #  Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Map[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
-  #  Map[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = NA
-  #}else{
+  if( DataList$Cross_correlation==TRUE & Rank_expanded==TRUE ){
+    Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Map[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
+    Map[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = NA
+  }else{
     Map[["lambda_tf"]][upper.tri(Map[["lambda_tf"]])] = NA
-  #}
+  }
   Map[["lambda_tf"]] = as.factor(Map[["lambda_tf"]])
 
   # Restrictions on cross-correlation

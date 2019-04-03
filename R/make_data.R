@@ -15,7 +15,7 @@
 #' @export
 make_data <-
 function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, Cross_correlation=TRUE,
-  Constrain_orthogonality=FALSE, CheckForErrors=TRUE ){
+  Constrain_orthogonality=FALSE, CheckForErrors=TRUE, X_jk=matrix(0,nrow=length(Y_j),ncol=0) ){
 
   # Rescale tprime_iz to start at 0
   tmin = min( c(t_i,t_j), na.rm=TRUE)
@@ -64,7 +64,7 @@ function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, Cross_correl
   # CMP_xmax should be >100 and CMP_breakpoint should be 1 for Tweedie model
   Return = NULL
   if(Version%in%c("EOFR_v1_0_0")){
-    Return = list( "Cross_correlation"=Cross_correlation, "Constrain_orthogonality"=Constrain_orthogonality, "n_i"=n_i, "n_j"=n_j, "n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_g"=n_g, "n_t"=n_t, "n_c"=n_c, "n_p"=n_p, "n_f"=n_f, "B_i"=B_i, "c_i"=c_i, "t_i"=tprime_i, "Y_j"=Y_j, "p_j"=p_j, "t_j"=tprime_j, "spde_aniso"=list(), "Ais_ij"=cbind(spatial_list$A_is@i,spatial_list$A_is@j), "Ais_x"=spatial_list$A_is@x, "Ags_ij"=cbind(spatial_list$A_gs@i,spatial_list$A_gs@j), "Ags_x"=spatial_list$A_gs@x )
+    Return = list( "Cross_correlation"=Cross_correlation, "Constrain_orthogonality"=Constrain_orthogonality, "n_i"=n_i, "n_j"=n_j, "n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_g"=n_g, "n_t"=n_t, "n_c"=n_c, "n_p"=n_p, "n_f"=n_f, "B_i"=B_i, "c_i"=c_i, "t_i"=tprime_i, "Y_j"=Y_j, "X_jk"=X_jk, "p_j"=p_j, "t_j"=tprime_j, "spde_aniso"=list(), "Ais_ij"=cbind(spatial_list$A_is@i,spatial_list$A_is@j), "Ais_x"=spatial_list$A_is@x, "Ags_ij"=cbind(spatial_list$A_gs@i,spatial_list$A_gs@j), "Ags_x"=spatial_list$A_gs@x )
   }
   if( is.null(Return) ) stop("`Version` provided does not match the list of possible values")
   if( "spde_aniso" %in% names(Return) ) Return[['spde_aniso']] = list("n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_tri"=nrow(spatial_list$MeshList$anisotropic_mesh$graph$tv), "Tri_Area"=spatial_list$MeshList$Tri_Area, "E0"=spatial_list$MeshList$E0, "E1"=spatial_list$MeshList$E1, "E2"=spatial_list$MeshList$E2, "TV"=spatial_list$MeshList$TV-1, "G0"=spatial_list$MeshList$anisotropic_spde$param.inla$M0, "G0_inv"=INLA::inla.as.dgTMatrix(solve(spatial_list$MeshList$anisotropic_spde$param.inla$M0)) )

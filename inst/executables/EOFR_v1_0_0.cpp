@@ -35,13 +35,13 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(Constrain_orthogonality);
 
   // Dimensions
-  DATA_INTEGER(n_i);         // Number of observations (stacked across all years)
-  DATA_INTEGER(n_j);
+  DATA_INTEGER(n_i);         // Number of physical observations (stacked across all categories and years)
+  DATA_INTEGER(n_j);         // Number of biological observations (stacked across species)
   DATA_INTEGER(n_s);         // Number of "strata" (i.e., vectices in SPDE mesh)
   DATA_INTEGER(n_g);         // Number of extrapolation-grid cells
   DATA_INTEGER(n_t);         // Number of time-indices
   DATA_INTEGER(n_c);         // Number of categories (e.g., length bins)
-  DATA_INTEGER(n_p);
+  DATA_INTEGER(n_p);         // Number of biological response variables
   DATA_INTEGER(n_f);         // Number of spatial factors
 
   // Physical data
@@ -51,6 +51,7 @@ Type objective_function<Type>::operator() ()
 
   // Biological data
   DATA_VECTOR(Y_j);          // Response for each biological observation
+  DATA_MATRIX(X_jk);         // Predictors for each biological observation
   DATA_IVECTOR(p_j);         // Category for each biological observation
   DATA_IVECTOR(t_j);          // Time-index for each biological observation
 
@@ -68,22 +69,23 @@ Type objective_function<Type>::operator() ()
 
   // Physical parameters
   PARAMETER_VECTOR(ln_H_input); // Anisotropy parameters
-  PARAMETER(logkappa);
+  PARAMETER(logkappa);             // log-spatial decorrelation rate
   PARAMETER_MATRIX(beta_ct);       // Year effect
   PARAMETER_ARRAY(epsiloninput_scf);   // Annual variation
-  PARAMETER_VECTOR(ln_sigma_c);
+  PARAMETER_VECTOR(ln_sigma_c);     // residual variance for physical variable
 
   // Biological parameters
   PARAMETER_VECTOR(beta_p);  // Intercept
-  PARAMETER_VECTOR(gamma_p);  //
-  PARAMETER_VECTOR(ln_sigma_p);
+  PARAMETER_VECTOR(beta_k);  // Intercept
+  PARAMETER_VECTOR(gamma_p);  // Slope, response to EOF index
+  PARAMETER_VECTOR(ln_sigma_p); // residual variance for biological variable
 
   ////////////////////////
   // Preparatory bookkeeping
   ////////////////////////
 
   // Indices -- i=Observation; t=Year; c=Category; p=Dynamic-covariate
-  int i,j,t,c,s,f,f2,f3;
+  int i,j,k,t,c,s,f,f2,f3;
   
   // Objective function
   vector<Type> jnll_comp(3);
@@ -112,35 +114,6 @@ Type objective_function<Type>::operator() ()
   matrix<Type> L_tf( n_t, n_f );
   L_tf = lambda_tf;
   if( (Constrain_orthogonality==true) & (n_f>=2) ){
-    //// 2nd columm
-    //if( n_f>=2 ){
-    //  Type tmpsum1 = 0;
-    //  for( t=1; t<n_t; t++ ){
-    //    tmpsum1 += L_tf(t,0) * L_tf(t,1);
-    //  }
-    //  L_tf(0,1) = -1 * tmpsum1 / L_tf(0,0);
-    //}
-    //// 3rd column
-    //if( n_f>=3 ){
-    //  vector<Type> tmpsum2(2);
-    //  tmpsum2.setZero();
-    //  for( t=2; t<n_t; t++ ){
-    //    tmpsum2(0) += L_tf(t,0) * L_tf(t,2);
-    //    tmpsum2(1) += L_tf(t,1) * L_tf(t,2);
-    //  }
-    //  matrix<Type> tmpmat2(2,2);
-    //  tmpmat2(0,0) = L_tf(0,0);
-    //  tmpmat2(1,0) = L_tf(1,0);
-    //  tmpmat2(0,1) = L_tf(0,1);
-    //  tmpmat2(1,1) = L_tf(1,1);
-    //  vector<Type> tmpvec2(2);
-    //  tmpvec2 = -1 * tmpsum2.matrix().transpose() * tmpmat2.inverse();
-    //  L_tf(0,2) = tmpvec2(0);
-    //  L_tf(1,2) = tmpvec2(1);
-    //  REPORT( tmpsum2 );
-    //  REPORT( tmpmat2 );
-    //  REPORT( tmpvec2 );
-    //}
     vector<Type> tmpsum( n_f-1 );
     matrix<Type> tmpmat( n_f-1, n_f-1 );
     vector<Type> tmpvec( n_f-1 );
@@ -161,8 +134,15 @@ Type objective_function<Type>::operator() ()
         L_tf(f2,f) = tmpvec(f2);
       }
     }
-
   }
+
+  // Biological covariates
+  vector<Type> eta_j( n_j );
+  eta_j.setZero();
+  for( j=0; j<n_j; j++ ){
+  for( k=0; k<X_jk.cols(); k++ ){
+    eta_j(j) += X_jk(j,k) * beta_k(k);
+  }}
 
   ////////////////////////
   // Random effects
@@ -191,7 +171,7 @@ Type objective_function<Type>::operator() ()
   for(f=0; f<n_f; f++){
   for(c=0; c<n_c; c++){
     // PDF for first year of autoregression
-    epsilon_sct(s,c,t) += ( epsiloninput_scf(s,c,f) * L_tf(t,f) ) / logtau;
+    epsilon_sct(s,c,t) += epsiloninput_scf(s,c,f)/exp(logtau) * L_tf(t,f);
   }}}}
 
   // Projection for epsilon to data
@@ -233,7 +213,7 @@ Type objective_function<Type>::operator() ()
   for(j=0; j<n_j; j++){
     if( !isNA(Y_j(j)) ){
       // Linear predictors
-      Yhat_j(j) = beta_p(p_j(j)) + gamma_p(p_j(j)) * L_tf(t_j(j),0) * Cross_correlation;
+      Yhat_j(j) = beta_p(p_j(j)) + eta_j(j) + gamma_p(p_j(j)) * L_tf(t_j(j),0) * Cross_correlation;
       // Likelihood for delta-models with continuous positive support
       ln_prob_j(j) = dnorm(Y_j(j), Yhat_j(j), sigma_p(p_j(j)), true);
     }
@@ -266,6 +246,9 @@ Type objective_function<Type>::operator() ()
   REPORT( jnll );
   REPORT( L_tf );
   REPORT( lambda_tf );
+  REPORT( eta_j );
+
+  ADREPORT( Yhat_j );
 
   // Calculate value of vactors at extrapolation-grid cells (e.g., for use when visualizing estimated or rotated factor estimates)
   array<Type> epsiloninput_gcf( n_g, n_c, n_f );

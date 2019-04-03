@@ -8,7 +8,7 @@
 
 #' @export
 make_parameters <-
-function( Version, DataList ){
+function( Version, DataList, Rank_expanded=FALSE ){
 
   # Local function to make a random array
   rarray = function( dim, mean=0, sd=0.01 ) array( rnorm(prod(dim),mean=mean,sd=sd), dim=dim)
@@ -23,7 +23,8 @@ function( Version, DataList ){
   if(Version%in%c("EOFR_v1_0_0")){
     Return = list("lambda_tf"=rarray(dim=c(DataList$n_t,DataList$n_f),sd=0.2), "ln_H_input"=c(0,0), "logkappa"=log(0.9),
       "beta_ct"=rarray(dim=c(DataList$n_c,DataList$n_t)), "epsiloninput_scf"=rarray(dim=c(DataList$n_s,DataList$n_c,DataList$n_f)),
-      "ln_sigma_c"=rep(1,DataList$n_c), "beta_p"=rep(0,DataList$n_p), "gamma_p"=rep(0,DataList$n_p), "ln_sigma_p"=rep(0,DataList$n_p) )
+      "ln_sigma_c"=rep(1,DataList$n_c), "beta_p"=rep(0,DataList$n_p), "beta_k"=rep(0,ncol(DataList$X_jk)), "gamma_p"=rep(0,DataList$n_p),
+      "ln_sigma_p"=rep(0,DataList$n_p) )
   }
 
   #######################
@@ -31,12 +32,12 @@ function( Version, DataList ){
   #######################
 
   # Restrictions on loadings
-  #if( DataList$Cross_correlation==TRUE ){
-  #  Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Return[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
-  #  Return[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = 0
-  #}else{
+  if( DataList$Cross_correlation==TRUE & Rank_expanded==TRUE ){
+    Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Return[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
+    Return[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = 0
+  }else{
     Return[["lambda_tf"]][upper.tri(Return[["lambda_tf"]])] = 0
-  #}
+  }
 
   # Error messages
   if( any(sapply(Return, FUN=function(num){any(is.na(num))})) ) stop("Some parameter is NA")
