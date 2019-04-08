@@ -1,6 +1,6 @@
 #' @export
 make_map <-
-function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE ){
+function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE, intercept_structure="separate" ){
 
   # Local functions
   fix_value <- function( fixvalTF ){
@@ -30,6 +30,11 @@ function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE ){
   # Restrictions on cross-correlation
   if( DataList$Cross_correlation==FALSE ){
     Map[["gamma_p"]] = as.factor(rep(NA,DataList$n_p))
+  }
+
+  # Restriction on intercepts
+  if( tolower(intercept_structure) == "category" ){
+    Map[["alpha_ct"]] = as.factor( 1:DataList$n_c %o% rep(1,DataList$n_t) )
   }
 
   # Anisotropy

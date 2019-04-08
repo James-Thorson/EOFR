@@ -70,13 +70,13 @@ Type objective_function<Type>::operator() ()
   // Physical parameters
   PARAMETER_VECTOR(ln_H_input); // Anisotropy parameters
   PARAMETER(logkappa);             // log-spatial decorrelation rate
-  PARAMETER_MATRIX(beta_ct);       // Year effect
+  PARAMETER_MATRIX(alpha_ct);       // Year effect
   PARAMETER_ARRAY(epsiloninput_scf);   // Annual variation
   PARAMETER_VECTOR(ln_sigma_c);     // residual variance for physical variable
 
   // Biological parameters
-  PARAMETER_VECTOR(beta_p);  // Intercept
-  PARAMETER_VECTOR(beta_k);  // Intercept
+  PARAMETER_VECTOR(beta0_p);  // Intercept
+  PARAMETER_VECTOR(beta_k);  // slope
   PARAMETER_VECTOR(gamma_p);  // Slope, response to EOF index
   PARAMETER_VECTOR(ln_sigma_p); // residual variance for biological variable
 
@@ -195,7 +195,7 @@ Type objective_function<Type>::operator() ()
   for(i=0; i<n_i; i++){
     if( !isNA(B_i(i)) ){
       // Linear predictors
-      Bhat_i(i) = beta_ct(c_i(i),t_i(i)) + epsilon_i(i);
+      Bhat_i(i) = alpha_ct(c_i(i),t_i(i)) + epsilon_i(i);
       // Likelihood for delta-models with continuous positive support
       ln_prob_i(i) = dnorm(B_i(i), Bhat_i(i), sigma_c(c_i(i)), true);
     }
@@ -213,7 +213,7 @@ Type objective_function<Type>::operator() ()
   for(j=0; j<n_j; j++){
     if( !isNA(Y_j(j)) ){
       // Linear predictors
-      Yhat_j(j) = beta_p(p_j(j)) + eta_j(j) + gamma_p(p_j(j)) * L_tf(t_j(j),0) * Cross_correlation;
+      Yhat_j(j) = beta0_p(p_j(j)) + eta_j(j) + gamma_p(p_j(j)) * L_tf(t_j(j),0) * Cross_correlation;
       // Likelihood for delta-models with continuous positive support
       ln_prob_j(j) = dnorm(Y_j(j), Yhat_j(j), sigma_p(p_j(j)), true);
     }

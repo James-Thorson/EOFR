@@ -22,8 +22,8 @@ function( Version, DataList, Rank_expanded=FALSE ){
 
   if(Version%in%c("EOFR_v1_0_0")){
     Return = list("lambda_tf"=rarray(dim=c(DataList$n_t,DataList$n_f),sd=0.2), "ln_H_input"=c(0,0), "logkappa"=log(0.9),
-      "beta_ct"=rarray(dim=c(DataList$n_c,DataList$n_t)), "epsiloninput_scf"=rarray(dim=c(DataList$n_s,DataList$n_c,DataList$n_f)),
-      "ln_sigma_c"=rep(1,DataList$n_c), "beta_p"=rep(0,DataList$n_p), "beta_k"=rep(0,ncol(DataList$X_jk)), "gamma_p"=rep(0,DataList$n_p),
+      "alpha_ct"=rarray(dim=c(DataList$n_c,DataList$n_t)), "epsiloninput_scf"=rarray(dim=c(DataList$n_s,DataList$n_c,DataList$n_f)),
+      "ln_sigma_c"=rep(1,DataList$n_c), "beta0_p"=rep(0,DataList$n_p), "beta_k"=rep(0,ncol(DataList$X_jk)), "gamma_p"=rep(0,DataList$n_p),
       "ln_sigma_p"=rep(0,DataList$n_p) )
   }
 
