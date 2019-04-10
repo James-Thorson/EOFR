@@ -96,17 +96,13 @@ TmbData = make_data("Version"=Version, "n_f"=n_f, "B_i"=Data_Geostat[,'Catch_KG'
 TmbList = make_model("TmbData"=TmbData, "RunDir"=DateFile, "Version"=Version, "TmbDir"=TmbDir, "use_REML"=use_REML,
   "Aniso"=Aniso, "spatial_list"=Spatial_List, "Rank_expanded"=Rank_expanded, "intercept_structure"=intercept_structure )
 Obj = TmbList[["Obj"]]
-Obj$env$beSilent()
-# Obj$env$parList()$L_tf
 
 # Optimize
-Opt = TMBhelper::Optimize( obj=Obj, getsd=TRUE, newtonsteps=1,  # lower=TmbList$Bounds[,'Lower'], upper=TmbList$Bounds[,'Upper'],
-  savedir=RunFile, bias.correct=FALSE, bias.correct.control=list(sd=FALSE, split=NULL, nsplit=1, vars_to_correct="Index_cyl"),
+Opt = TMBhelper::Optimize( obj=Obj, getsd=TRUE, newtonsteps=1, savedir=RunFile,
   control=list(eval.max=10000,iter.max=10000,trace=1) )
 
 # Summarize
 Report = Obj$report()
-if("h" %in% names(Opt)) Opt$par = Opt$opt$par
 ParHat = Obj$env$parList(Opt$par)
 
 ####################
