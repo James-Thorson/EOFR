@@ -35,7 +35,7 @@
 make_model <-
 function( TmbData, Version, spatial_list, Parameters="generate", Random="generate", Map="generate",
   TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE,
-  use_REML=FALSE, Aniso=TRUE, Rank_expanded=FALSE, intercept_structure="separate",
+  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="separate",
   sigmac_structure="separate" ){
                                             
   # Compile TMB software
@@ -47,11 +47,11 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
 
   # Parameters
     # TmbData=TmbData
-  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = make_parameters( Version=Version, DataList=TmbData, Rank_expanded=Rank_expanded )
+  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = make_parameters( Version=Version, DataList=TmbData, Rank=Rank )
 
   # Which parameters are turned off
   if( length(Map)==1 && Map=="generate" ){
-    Map = make_map( DataList=TmbData, TmbParams=Parameters, Aniso=Aniso, Rank_expanded=Rank_expanded,
+    Map = make_map( DataList=TmbData, TmbParams=Parameters, Aniso=Aniso, Rank=Rank,
       intercept_structure=intercept_structure, sigmac_structure=sigmac_structure )
   }
 

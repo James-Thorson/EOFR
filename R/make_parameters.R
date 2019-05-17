@@ -8,7 +8,7 @@
 
 #' @export
 make_parameters <-
-function( Version, DataList, Rank_expanded=FALSE ){
+function( Version, DataList, Rank="Expanded" ){
 
   # Local function to make a random array
   rarray = function( dim, mean=0, sd=0.01 ) array( rnorm(prod(dim),mean=mean,sd=sd), dim=dim)
@@ -32,11 +32,19 @@ function( Version, DataList, Rank_expanded=FALSE ){
   #######################
 
   # Restrictions on loadings
-  if( DataList$Cross_correlation==TRUE & Rank_expanded==TRUE ){
-    Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Return[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
-    Return[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = 0
-  }else{
+  if( tolower(Rank) == "expanded" ){
+    if( DataList$Cross_correlation==TRUE ){
+      Fix = cbind( rep(1,DataList$n_t) %o% rep(FALSE,DataList$n_p), upper.tri(Return[["lambda_tf"]][,-seq_pos(DataList$n_p),drop=FALSE]) )
+      Return[["lambda_tf"]][ ifelse(Fix==1,TRUE,FALSE) ] = 0
+    }else{
+      Return[["lambda_tf"]][upper.tri(Return[["lambda_tf"]])] = 0
+    }
+  }
+  if( tolower(Rank) == "reduced" ){
     Return[["lambda_tf"]][upper.tri(Return[["lambda_tf"]])] = 0
+  }
+  if( tolower(Rank) == "full" ){
+    # Nothing needed
   }
 
   # Error messages
