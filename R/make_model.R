@@ -96,6 +96,8 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
   Dist = stats::dist(spatial_list$loc_x)
   Bounds[grep("logkappa",names(Obj$par)),'Lower'] = log( sqrt(8)/max(Dist) ) # Range = nu*sqrt(8)/kappa
   Bounds[grep("logkappa",names(Obj$par)),'Upper'] = log( sqrt(8)/min(Dist) ) # Range = nu*sqrt(8)/kappa
+  Bounds[grep("ln_sigma_p",names(Obj$par)),'Lower'] = log( 0.01 ) #
+  Bounds[grep("ln_sigma_c",names(Obj$par)),'Lower'] = log( 0.01 ) #
 
   # Return stuff
   Return = list("Obj"=Obj, "Upper"=rep(Inf,length(Obj$par)), "Lower"=rep(-Inf,length(Obj$par)), "Parameters"=Parameters, "Map"=Map, "Random"=Random, "Bounds"=Bounds)

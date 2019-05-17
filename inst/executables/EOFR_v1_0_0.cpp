@@ -190,6 +190,7 @@ Type objective_function<Type>::operator() ()
   // Derived quantities
   vector<Type> Bhat_i(n_i);
   vector<Type> ln_prob_i(n_i);
+  ln_prob_i.setZero();
 
   // Likelihood contribution from observations
   for(i=0; i<n_i; i++){
