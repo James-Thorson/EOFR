@@ -2,10 +2,10 @@
 
 export(Build_TMB_Fn)
 export(Data_Fn)
-export(Make_Map)
-export(Param_Fn)
 export(make_data)
+export(make_map)
 export(make_model)
+export(make_parameters)
 importFrom(grDevices,colorRampPalette)
 importFrom(grDevices,dev.off)
 importFrom(grDevices,png)

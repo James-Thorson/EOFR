@@ -33,39 +33,12 @@
 
 #' @export
 make_model <-
-function( TmbData, Version, RhoConfig=c("Beta1"=0,"Beta2"=0,"Epsilon1"=0,"Epsilon2"=0), Method="Mesh", Npool=0,
-  ConvergeTol=1, Use_REML=FALSE, loc_x=NULL, Parameters="generate", Random="generate", Map="generate",
-  DiagnosticDir=NULL, TmbDir=system.file("executables",package="VAST"), RunDir=getwd(), build_model=TRUE ){
+function( TmbData, Version, spatial_list, Parameters="generate", Random="generate", Map="generate",
+  TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE,
+  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="separate",
+  sigmac_structure="separate" ){
                                             
-  # Extract Options and Options_vec (depends upon version)
-  if( all(c("Options","Options_vec") %in% names(TmbData)) ){
-    Options_vec = TmbData$Options_vec
-    Options = TmbData$Options
-  }
-  if( "Options_list" %in% names(TmbData) ){
-    Options_vec = TmbData$Options_list$Options_vec
-    Options = TmbData$Options_list$Options
-  }
-
-  # Augment objects in TmbData (to deal with backwards compatibility)
-  if( !("n_e" %in% names(TmbData)) ){
-    TmbData[["n_e"]] = TmbData$n_c
-  }
-  if( !("ObsModel_ez" %in% names(TmbData)) ){
-    TmbData[["ObsModel_ez"]] = rep(1,TmbData[["n_e"]]) %o% TmbData$ObsModel
-  }
-  if( !("c_iz" %in% names(TmbData)) ){
-    TmbData[["c_iz"]] = matrix( TmbData$c_i, ncol=1 )
-  }
-  if( !("e_i" %in% names(TmbData)) ){
-    TmbData[["e_i"]] = TmbData$c_iz[,1]
-  }
-  if( !("t_iz" %in% names(TmbData)) ){
-    TmbData[["t_iz"]] = matrix( TmbData$t_i, ncol=1 )
-  }
-
   # Compile TMB software
-  #dyn.unload( paste0(RunDir,"/",dynlib(TMB:::getUserDLL())) ) # random=Random,
   file.copy( from=paste0(TmbDir,"/",Version,".cpp"), to=paste0(RunDir,"/",Version,".cpp"), overwrite=FALSE)
   origwd = getwd()
   on.exit(setwd(origwd),add=TRUE)
@@ -74,31 +47,20 @@ function( TmbData, Version, RhoConfig=c("Beta1"=0,"Beta2"=0,"Epsilon1"=0,"Epsilo
 
   # Parameters
     # TmbData=TmbData
-  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = Param_Fn( Version=Version, DataList=TmbData, RhoConfig=RhoConfig )
+  if( length(Parameters)==1 && Parameters=="generate" ) Parameters = make_parameters( Version=Version, DataList=TmbData, Rank=Rank )
 
   # Which parameters are turned off
-  if( length(Map)==1 && Map=="generate" ) Map = Make_Map( DataList=TmbData, TmbParams=Parameters, RhoConfig=RhoConfig, Npool=Npool )
+  if( length(Map)==1 && Map=="generate" ){
+    Map = make_map( DataList=TmbData, TmbParams=Parameters, Aniso=Aniso, Rank=Rank,
+      intercept_structure=intercept_structure, sigmac_structure=sigmac_structure )
+  }
 
   # Which are random
   if( length(Random)==1 && Random=="generate" ){
-    Random = c("Epsiloninput1_sct", "Omegainput1_sc", "Epsiloninput1_sft", "Omegainput1_sf", "eta1_vf", "Epsiloninput2_sct", "Omegainput2_sc", "Epsiloninput2_sft", "Omegainput2_sf", "eta2_vf", "delta_i")
-    if( all(c("beta1_ct","beta2_ct") %in% names(Parameters)) ){
-      if( RhoConfig[["Beta1"]]%in%c(1,2,4) ) Random = c(Random, "beta1_ct")
-      if( RhoConfig[["Beta2"]]%in%c(1,2,4) ) Random = c(Random, "beta2_ct")
-      if( Use_REML==TRUE ){
-        Random = union(Random, c("beta1_ct","gamma1_j","gamma1_tp","gamma1_ctp","lambda1_k","beta2_ct","gamma2_j","gamma2_tp","gamma2_ctp","lambda2_k"))
-      }
+    Random = c("epsiloninput_scf")
+    if( use_REML==TRUE ){
+      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k","beta0_p","alpha_ct") ) #
     }
-    if( all(c("beta1_ft","beta2_ft") %in% names(Parameters)) ){
-      if( RhoConfig[["Beta1"]]%in%c(1,2,4) ) Random = c(Random, "beta1_ft")
-      if( RhoConfig[["Beta2"]]%in%c(1,2,4) ) Random = c(Random, "beta2_ft")
-      if( Use_REML==TRUE ){
-        Random = union(Random, c("beta1_ft","gamma1_j","gamma1_tp","gamma1_ctp","lambda1_k","beta2_ft","gamma2_j","gamma2_tp","gamma2_ctp","lambda2_k"))
-      }
-    }
-    if( "Xiinput1_scp" %in% names(Parameters) ) Random = c(Random, "Xiinput1_scp")
-    if( "Xiinput2_scp" %in% names(Parameters) ) Random = c(Random, "Xiinput2_scp")
-    # Avoid problems with mapping
     Random = Random[which(Random %in% names(Parameters))]
     if( length(Random)==0) Random = NULL
   }
@@ -120,88 +82,26 @@ function( TmbData, Version, RhoConfig=c("Beta1"=0,"Beta2"=0,"Epsilon1"=0,"Epsilo
   Obj <- MakeADFun(data=TmbData, parameters=Parameters, hessian=FALSE, map=Map, random=Random, inner.method="newton", DLL=Version)  #
   Obj$control <- list(parscale=1, REPORT=1, reltol=1e-12, maxit=100)
 
-  # Add normalization in
-  if( FishStatsUtils::convert_version_name(Version) >= FishStatsUtils::convert_version_name("VAST_v4_1_0") ){
-    if( Options['normalize_GMRF_in_CPP']==FALSE ){
-      message("Normalizing GMRF in R using `TMB::normalize` feature")
-      Obj = TMB::normalize(Obj, flag="include_data", value=FALSE)
-    }
-  }
+  # Change convergence tolerance
+  Obj$env$inner.control$step.tol <- c(1e-8,1e-12,1e-15)[1] # Default : 1e-8  # Change in parameters limit inner optimization
+  Obj$env$inner.control$tol10 <- c(1e-6,1e-8,1e-12)[1]  # Default : 1e-3     # Change in pen.like limit inner optimization
+  Obj$env$inner.control$grad.tol <- c(1e-8,1e-12,1e-15)[1] # # Default : 1e-8  # Maximum gradient limit inner optimization
 
-  # Diagnostic functions (optional)
-  if( !is.null(DiagnosticDir) ){
-    Obj$gr_orig = Obj$gr
-    Obj$fn_orig = Obj$fn
-    Obj$fn = function( vec ){
-      utils::capture.output( matrix(vec,ncol=1,dimnames=list(names(Obj$par),NULL)), file=paste0(DiagnosticDir,"fn.txt") )
-      utils::write.table( matrix(vec,nrow=1), row.names=FALSE, sep=",", col.names=FALSE, append=TRUE, file=paste0(DiagnosticDir,"trace.csv"))
-      return( Obj$fn_orig(vec) )
-    }
-    Obj$gr = function( vec ){
-      utils::capture.output( matrix(vec,ncol=1,dimnames=list(names(Obj$par),NULL)), file=paste0(DiagnosticDir,"gr.txt") )
-      return( Obj$gr_orig(vec) )
-    }
-    utils::write.table( matrix(Obj$par,nrow=1), row.names=FALSE, sep=",", col.names=FALSE, file=paste0(DiagnosticDir,"trace.csv"))
-  }
-  
-  # Local functions
-  boundsifpresent_fn = function( par, map, name, lower, upper, bounds ){
-    if( name %in% names(par) ){
-      bounds[grep(name,names(par)),c('Lower','Upper')] = rep(1,length(grep(name,names(par)))) %o% c(lower,upper)
-    }
-    return( bounds )
-  }
+  # Print number of parameters
+  ThorsonUtilities::list_parameters( Obj )
 
   # Declare upper and lower bounds for parameter search
   Bounds = matrix( NA, ncol=2, nrow=length(Obj$par), dimnames=list(names(Obj$par),c("Lower","Upper")) )
   Bounds[,'Lower'] = rep(-Inf, length(Obj$par))
   Bounds[,'Upper'] = rep( Inf, length(Obj$par))
-  Bounds[grep("SigmaM",names(Obj$par)),'Upper'] = 10 # ZINB can crash if it gets > 20
-  if( any(TmbData$ObsModel_ez[1,]==8) ) Bounds[grep("SigmaM",names(Obj$par)),'Upper'] = 3 # Tweedie can crash if logSigmaM gets too high
-  if( !is.null(loc_x) && !is.na(Options_vec['Method']) && Options_vec['Method']==0 && Method!="Spherical_mesh" ){
-    Dist = stats::dist(loc_x)
-    Bounds[grep("logkappa",names(Obj$par)),'Lower'] = log( sqrt(8)/max(Dist) ) # Range = nu*sqrt(8)/kappa
-    Bounds[grep("logkappa",names(Obj$par)),'Upper'] = log( sqrt(8)/min(Dist) ) # Range = nu*sqrt(8)/kappa
-  }
-  if( !is.na(Options_vec['Method']) && Options_vec['Method']==1 && Method!="Spherical_mesh" ){
-    Bounds[grep("logkappa",names(Obj$par)),'Upper'] = log(0.9999) # Must be negative, so that Rho<1
-  }
-  Bounds = boundsifpresent_fn( par=Obj$par, name="gamma1", lower=-20, upper=20, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="gamma2", lower=-20, upper=20, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="lambda1", lower=-20, upper=20, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="lambda2", lower=-20, upper=20, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Beta_rho1", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Beta_rho2", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Epsilon_rho1", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Epsilon_rho2", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Epsilon_rho1_f", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="Epsilon_rho2_f", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="rho_c1", lower=-0.99, upper=0.99, bounds=Bounds)
-  Bounds = boundsifpresent_fn( par=Obj$par, name="rho_c2", lower=-0.99, upper=0.99, bounds=Bounds)
-  if( ("n_f_input"%in%names(TmbData)) && TmbData[["n_f_input"]]==0 ){
-    Bounds = boundsifpresent_fn( par=Obj$par, name="L1_z", lower=c(-Inf,-0.99), upper=c(Inf,0.99), bounds=Bounds)
-    Bounds = boundsifpresent_fn( par=Obj$par, name="L2_z", lower=c(-Inf,-0.99), upper=c(Inf,0.99), bounds=Bounds)
-  }
-  if( ("OverdispersionConfig"%in%names(TmbData)) ){
-    if( TmbData[["OverdispersionConfig"]][1]==0 ) Bounds = boundsifpresent_fn( par=Obj$par, name="L1_z", lower=c(-Inf,-0.99), upper=c(Inf,0.99), bounds=Bounds)
-    if( TmbData[["OverdispersionConfig"]][1]==0 ) Bounds = boundsifpresent_fn( par=Obj$par, name="L2_z", lower=c(-Inf,-0.99), upper=c(Inf,0.99), bounds=Bounds)
-  }
-  #for(i in 1:4){
-  #  if( TmbData[["FieldConfig"]][i]==0 ){
-  #    Bounds = boundsifpresent_fn( par=Obj$par, name=c("L_omega1_z","L_epsilon1_z","L_omega2_z","L_epsilon2_z")[i], lower=c(-Inf,-0.99), upper=c(Inf,0.99), bounds=Bounds)
-  #  }
-  #}
-
-  # Change convergence tolerance
-  Obj$env$inner.control$step.tol <- c(1e-8,1e-12,1e-15)[ConvergeTol] # Default : 1e-8  # Change in parameters limit inner optimization
-  Obj$env$inner.control$tol10 <- c(1e-6,1e-8,1e-12)[ConvergeTol]  # Default : 1e-3     # Change in pen.like limit inner optimization
-  Obj$env$inner.control$grad.tol <- c(1e-8,1e-12,1e-15)[ConvergeTol] # # Default : 1e-8  # Maximum gradient limit inner optimization
-
-  # Print number of parameters
-  ThorsonUtilities::list_parameters( Obj )
+  Dist = stats::dist(spatial_list$loc_x)
+  Bounds[grep("logkappa",names(Obj$par)),'Lower'] = log( sqrt(8)/max(Dist) ) # Range = nu*sqrt(8)/kappa
+  Bounds[grep("logkappa",names(Obj$par)),'Upper'] = log( sqrt(8)/min(Dist) ) # Range = nu*sqrt(8)/kappa
+  Bounds[grep("ln_sigma_p",names(Obj$par)),'Lower'] = log( 0.01 ) #
+  Bounds[grep("ln_sigma_c",names(Obj$par)),'Lower'] = log( 0.01 ) #
 
   # Return stuff
-  Return = list("Obj"=Obj, "Upper"=Bounds[,'Upper'], "Lower"=Bounds[,'Lower'], "Parameters"=Parameters, "Map"=Map, "Random"=Random)
+  Return = list("Obj"=Obj, "Upper"=rep(Inf,length(Obj$par)), "Lower"=rep(-Inf,length(Obj$par)), "Parameters"=Parameters, "Map"=Map, "Random"=Random, "Bounds"=Bounds)
   return( Return )
 }
 
