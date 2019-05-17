@@ -58,7 +58,7 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
   if( length(Random)==1 && Random=="generate" ){
     Random = c("epsiloninput_scf")
     if( use_REML==TRUE ){
-      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k") ) #
+      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k","beta0_p","alpha_ct") ) #
     }
     Random = Random[which(Random %in% names(Parameters))]
     if( length(Random)==0) Random = NULL
