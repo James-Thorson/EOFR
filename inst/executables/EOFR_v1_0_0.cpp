@@ -209,6 +209,7 @@ Type objective_function<Type>::operator() ()
   // Derived quantities
   vector<Type> Yhat_j(n_j);
   vector<Type> ln_prob_j(n_j);
+  ln_prob_j.setZero();
 
   // Likelihood contribution from observations
   for(j=0; j<n_j; j++){

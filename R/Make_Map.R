@@ -1,6 +1,7 @@
 #' @export
 make_map <-
-function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE, intercept_structure="separate" ){
+function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE, intercept_structure="separate",
+  sigmac_structure="separate" ){
 
   # Local functions
   fix_value <- function( fixvalTF ){
@@ -35,6 +36,11 @@ function( DataList, TmbParams, Rank_expanded=FALSE, Aniso=TRUE, intercept_struct
   # Restriction on intercepts
   if( tolower(intercept_structure) == "category" ){
     Map[["alpha_ct"]] = as.factor( 1:DataList$n_c %o% rep(1,DataList$n_t) )
+  }
+
+  # Restrictions on ln_sigma_c
+  if( tolower(sigmac_structure) == "identical" ){
+    Map[["ln_sigma_c"]] = as.factor( rep(1,DataList$n_c) )
   }
 
   # Anisotropy
