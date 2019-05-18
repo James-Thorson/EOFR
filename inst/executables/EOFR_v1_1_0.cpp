@@ -9,17 +9,16 @@ bool isNA(Type x){
 
 // Input:  n_g, n_f, n_t, logical_flag, Ags_ij, Ags_x, Mat_sc
 template<class Type>                                                                                        //
-array<Type> project_knots( int n_g, int n_c, int n_f, array<Type> Mat_scf, matrix<int> A_ij, vector<Type> A_x ){
-  array<Type> Mat_gcf(n_g, n_c, n_f);
-  Mat_gcf.setZero();
-  for( int c=0; c<n_c; c++ ){
+array<Type> project_knots( int n_g, array<Type> Mat_sc, matrix<int> A_ij, vector<Type> A_x ){
+  array<Type> Mat_gc( n_g, Mat_sc.cols() );
+  Mat_gc.setZero();
+  for( int c=0; c<Mat_sc.cols(); c++ ){
   for( int Arow=0; Arow<A_ij.rows(); Arow++ ){
-  for( int f=0; f<n_f; f++ ){
     int g = A_ij(Arow,0);
     int s = A_ij(Arow,1);
-    Mat_gcf(g,c,f) += A_x(Arow) * Mat_scf(s,c,f);
-  }}}
-  return Mat_gcf;
+    Mat_gc(g,c) += A_x(Arow) * Mat_sc(s,c);
+  }}
+  return Mat_gc;
 }
 
 // Space time
@@ -77,7 +76,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(ln_sigma_c);     // residual variance for physical variable
   PARAMETER_VECTOR(delta_l);        // Mean intercalibration for each calibration-level l
   PARAMETER_VECTOR(ln_sigma_l);      // SD for spatial variation in intercalibration for each calibration-level l
-  PARAMETER_MATRIX(deltainput_sl);   // Zero-centered spatial intercalibration for each calibration-level l
+  PARAMETER_ARRAY(deltainput_sl);   // Zero-centered spatial intercalibration for each calibration-level l
 
   // Biological parameters
   PARAMETER_VECTOR(beta0_p);  // Intercept
@@ -197,7 +196,7 @@ Type objective_function<Type>::operator() ()
   }
 
   // Transformation for deltainput_sl
-  matrix<Type> delta_sl( deltainput_sl.rows(), deltainput_sl.cols() );
+  array<Type> delta_sl( deltainput_sl.rows(), deltainput_sl.cols() );
   delta_sl.setZero();
   for(s=0; s<n_s; s++){
   for(l=0; l<n_l; l++){
@@ -289,13 +288,22 @@ Type objective_function<Type>::operator() ()
 
   // Calculate value of vactors at extrapolation-grid cells (e.g., for use when visualizing estimated or rotated factor estimates)
   array<Type> epsiloninput_gcf( n_g, n_c, n_f );
-  epsiloninput_gcf = project_knots( n_g, n_c, n_f, epsiloninput_scf, Ags_ij, Ags_x );
+  for(f=0; f<n_f; f++){
+    epsiloninput_gcf.col(f) = project_knots( n_g, epsiloninput_scf.col(f), Ags_ij, Ags_x );
+  }
   REPORT( epsiloninput_gcf );
 
   // Projection from epsilon to observations
   array<Type> epsilon_gct(n_g, n_c, n_t);
-  epsilon_gct = project_knots( n_g, n_c, n_t, epsilon_sct, Ags_ij, Ags_x );
+  for(t=0; t<n_t; t++){
+    epsilon_gct.col(t) = project_knots( n_g, epsilon_sct.col(t), Ags_ij, Ags_x );
+  }
   REPORT( epsilon_gct );
+
+  // Calculate value of vactors at extrapolation-grid cells (e.g., for use when visualizing estimated or rotated factor estimates)
+  array<Type> delta_gl( n_g, delta_sl.cols() );
+  delta_gl = project_knots( n_g, delta_sl, Ags_ij, Ags_x );
+  REPORT( delta_gl );
 
   return jnll;
 }
