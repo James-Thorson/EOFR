@@ -48,6 +48,9 @@ function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure=
   if( tolower(intercept_structure) == "none" ){
     Map[["alpha_ct"]] = as.factor( array(NA, dim=c(DataList$n_c,DataList$n_t)) )
   }
+  if( tolower(intercept_structure) == "separate" ){
+    # Nothing needed to do
+  }
 
   # Restrictions on ln_sigma_c
   if( tolower(sigmac_structure) == "identical" ){

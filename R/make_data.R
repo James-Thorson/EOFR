@@ -15,7 +15,7 @@
 
 #' @export
 make_data <-
-function( Version, B_i, Y_j, c_i, t_i, l_i, n_f, t_j, p_j, spatial_list, Cross_correlation=TRUE,
+function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, l_i=c_i, Cross_correlation=TRUE,
   Constrain_orthogonality=FALSE, CheckForErrors=TRUE, X_jk=matrix(0,nrow=length(Y_j),ncol=0) ){
 
   # Rescale tprime_iz to start at 0
