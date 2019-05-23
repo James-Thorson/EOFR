@@ -1,6 +1,6 @@
 #' @export
 make_map <-
-function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure="separate",
+function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure="category",
   sigmac_structure="separate" ){
 
   # Local functions
