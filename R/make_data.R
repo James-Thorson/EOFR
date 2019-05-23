@@ -30,7 +30,7 @@ function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, l_i=c_i, Cro
   # Determine dimensions
   n_i = length(B_i)
   n_j = length(Y_j)
-  n_l = ifelse( all(is.na(l_i)), 0, max(l_i,na.rm=TRUE) )
+  n_l = ifelse( all(is.na(l_i)), 0, max(l_i,na.rm=TRUE) + 1 )
   n_t = tmax - tmin + 1
   n_c = max(c_i, na.rm=TRUE) + 1
   n_p = max(p_j, na.rm=TRUE) + 1
