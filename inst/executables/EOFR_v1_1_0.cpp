@@ -90,7 +90,6 @@ Type objective_function<Type>::operator() ()
 
   // Indices -- i=Observation; t=Year; c=Category; p=Dynamic-covariate
   int i,j,k,l,t,c,s,f,f2,f3;
-  int nprime_p = n_p; // Eliminate error by using n_p, which is otherwise useful for generating data
 
   // Objective function
   vector<Type> jnll_comp(4);
@@ -106,7 +105,7 @@ Type objective_function<Type>::operator() ()
   Range_raw = sqrt(8) / exp( logkappa );   // Range = approx. distance @ 10% correlation
   vector<Type> sigma_c( ln_sigma_c.size() );
   sigma_c = exp( ln_sigma_c );
-  vector<Type> sigma_p( ln_sigma_p.size() );
+  vector<Type> sigma_p( n_p );
   sigma_p = exp( ln_sigma_p );
   vector<Type> sigma_l( ln_sigma_l.size() );
   sigma_l = exp( ln_sigma_l );
