@@ -35,7 +35,7 @@
 make_model <-
 function( TmbData, Version, spatial_list, Parameters="generate", Random="generate", Map="generate",
   TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE,
-  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="category",
+  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="none",
   sigmac_structure="separate" ){
                                             
   # Compile TMB software

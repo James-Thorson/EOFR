@@ -5,9 +5,9 @@
 #'
 #' @param b_i Sampled biomass for each observation i
 #' @param a_i Sampled area for each observation i
-#' @param c_i Category (e.g., species, length-bin) for each observation i
+#' @param c_i Category (e.g., species, length-bin) for each observation i (running from 0 to number of categories minus 1)
 #' @param t_i vector specifying time for each observation, e.g., year
-#' @param l_i vector specifying which calibration factor is applied to a given observation (use NA if not calibrated)
+#' @param l_i vector specifying which calibration factor is applied to a given observation  (running from 0 to number of categories minus 1); use NA if not calibrated.
 #' @param Version a version number (see example for current default).
 #' @param spatial_list tagged list of locatoinal information from , i.e., from \code{FishStatsUtils::make_spatial_info}
 

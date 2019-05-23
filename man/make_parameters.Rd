@@ -4,7 +4,7 @@
 \alias{make_parameters}
 \title{Calculate parameter inputs for TMB}
 \usage{
-make_parameters(Version, DataList, Rank_expanded = FALSE)
+make_parameters(Version, DataList, Rank = "Expanded")
 }
 \arguments{
 \item{Version}{a version number (see example for current default).}
