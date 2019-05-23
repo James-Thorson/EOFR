@@ -6,9 +6,8 @@ Package to conduct EOF regression
 The EOFR package can be run e.g., using the following script.  While long, the majority of the code is either settings, compiling data, or plotting, and each block of code is labeled:
 
 ```R
-
-devtools::install_github("james-thorson/FishStatsUtils", ref="development" )
-devtools::install_github("james-thorson/EOFR", ref="development" )
+devtools::install_github("james-thorson/FishStatsUtils", ref="2.0.0" )
+devtools::install_github("james-thorson/EOFR", ref="development" ) # add your own value for auth_token from github
 
 setwd("D:/UW Hideaway (SyncBackFree)/Collaborations/2019 -- EOF regression")
 
@@ -20,14 +19,9 @@ library(EOFR)
 ###########################
 
 # Global settings
-n_x = 50   # Specify number of stations (a.k.a. "knots")
+n_x = 50   # Specify number of knots for predictive process
 n_f = 3
-#Cross_correlation = FALSE
-Rank_expanded = TRUE
 Species = "cod"
-use_REML = TRUE
-intercept_structure = "category"
-Cross_correlation = TRUE
 
 # Directory
 Date = Sys.Date()
@@ -39,7 +33,6 @@ fine_scale = TRUE
 Region = "Other"
 strata.limits = data.frame('STRATA'="All_areas")
 Aniso = FALSE
-Constrain_orthogonality = FALSE
 
 ########################
 # Load data
@@ -89,16 +82,15 @@ Spatial_List = make_spatial_info( grid_size_km=1000, n_x=n_x, Method="Mesh", Lon
 # Build data
 TmbData = make_data("Version"=Version, "n_f"=n_f, "B_i"=Data_Geostat[,'Catch_KG'], "Y_j"=Y_j,  "X_jk"=X_jk,
   "c_i"=as.numeric(Data_Geostat[,'spp'])-1, "p_j"=rep(0,length(Y_j)), "t_i"=as.numeric(Data_Geostat[,'Year']), "t_j"=t_j,
-  "spatial_list"=Spatial_List, "Cross_correlation"=Cross_correlation, "Constrain_orthogonality"=Constrain_orthogonality )
+  "spatial_list"=Spatial_List )
 
 # Build object
   # dyn.load( paste0(DateFile,"/",TMB::dynlib(Version)) )
-TmbList = make_model("TmbData"=TmbData, "RunDir"=DateFile, "Version"=Version, "TmbDir"=TmbDir, "use_REML"=use_REML,
-  "Aniso"=Aniso, "spatial_list"=Spatial_List, "Rank_expanded"=Rank_expanded, "intercept_structure"=intercept_structure )
+TmbList = make_model("TmbData"=TmbData, "RunDir"=DateFile, "Version"=Version, "Aniso"=Aniso, "spatial_list"=Spatial_List )
 Obj = TmbList[["Obj"]]
 
 # Optimize
-Opt = TMBhelper::Optimize( obj=Obj, getsd=TRUE, newtonsteps=1, savedir=RunFile,
+Opt = TMBhelper::fit_tmb( obj=Obj, getsd=TRUE, newtonsteps=1, savedir=RunFile,
   control=list(eval.max=10000,iter.max=10000,trace=1) )
 
 # Summarize
@@ -161,6 +153,4 @@ for( cI in 1:TmbData$n_c ){
     dev.off()
   }
 }
-
-
 ```
