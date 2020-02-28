@@ -1,6 +1,6 @@
 #' @export
 make_map <-
-function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure="separate",
+function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure="none",
   sigmac_structure="separate" ){
 
   # Local functions
@@ -44,6 +44,12 @@ function( DataList, TmbParams, Rank="Expanded", Aniso=TRUE, intercept_structure=
   # Restriction on intercepts
   if( tolower(intercept_structure) == "category" ){
     Map[["alpha_ct"]] = as.factor( 1:DataList$n_c %o% rep(1,DataList$n_t) )
+  }
+  if( tolower(intercept_structure) == "none" ){
+    Map[["alpha_ct"]] = as.factor( array(NA, dim=c(DataList$n_c,DataList$n_t)) )
+  }
+  if( tolower(intercept_structure) == "separate" ){
+    # Nothing needed to do
   }
 
   # Restrictions on ln_sigma_c

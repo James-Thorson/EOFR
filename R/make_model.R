@@ -35,7 +35,7 @@
 make_model <-
 function( TmbData, Version, spatial_list, Parameters="generate", Random="generate", Map="generate",
   TmbDir=system.file("executables",package="EOFR"), RunDir=getwd(), build_model=TRUE,
-  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="separate",
+  use_REML=FALSE, Aniso=TRUE, Rank="Expanded", intercept_structure="none",
   sigmac_structure="separate" ){
                                             
   # Compile TMB software
@@ -57,9 +57,9 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
 
   # Which are random
   if( length(Random)==1 && Random=="generate" ){
-    Random = c("epsiloninput_scf")
+    Random = c("epsiloninput_scf", "deltainput_sl")
     if( use_REML==TRUE ){
-      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k","beta0_p","alpha_ct") ) #
+      Random = union( Random, c("beta_ct","beta_p","gamma_p","beta_k","beta0_p","alpha_ct","delta_l") ) #
     }
     Random = Random[which(Random %in% names(Parameters))]
     if( length(Random)==0) Random = NULL

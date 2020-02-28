@@ -5,8 +5,9 @@
 #'
 #' @param b_i Sampled biomass for each observation i
 #' @param a_i Sampled area for each observation i
-#' @param c_i Category (e.g., species, length-bin) for each observation i
-#' @param t_i Matrix where each row species the time for each observation i (if t_iz is a vector, it is coerced to a matrix with one column; if it is a matrix with two or more columns, it specifies multiple times for each observation, e.g., both year and season)
+#' @param c_i Category (e.g., species, length-bin) for each observation i (running from 0 to number of categories minus 1)
+#' @param t_i vector specifying time for each observation, e.g., year
+#' @param l_i vector specifying which calibration factor is applied to a given observation  (running from 0 to number of categories minus 1); use NA if not calibrated.
 #' @param Version a version number (see example for current default).
 #' @param spatial_list tagged list of locatoinal information from , i.e., from \code{FishStatsUtils::make_spatial_info}
 
@@ -14,7 +15,7 @@
 
 #' @export
 make_data <-
-function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, Cross_correlation=TRUE,
+function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, l_i=c_i, Cross_correlation=TRUE,
   Constrain_orthogonality=FALSE, CheckForErrors=TRUE, X_jk=matrix(0,nrow=length(Y_j),ncol=0) ){
 
   # Rescale tprime_iz to start at 0
@@ -26,6 +27,7 @@ function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, Cross_correl
   # Determine dimensions
   n_i = length(B_i)
   n_j = length(Y_j)
+  n_l = ifelse( all(is.na(l_i)), 0, max(l_i,na.rm=TRUE) + 1 )
   n_t = tmax - tmin + 1
   n_c = max(c_i, na.rm=TRUE) + 1
   n_p = max(p_j, na.rm=TRUE) + 1
@@ -65,6 +67,9 @@ function( Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list, Cross_correl
   Return = NULL
   if(Version%in%c("EOFR_v1_0_0")){
     Return = list( "Cross_correlation"=Cross_correlation, "Constrain_orthogonality"=Constrain_orthogonality, "n_i"=n_i, "n_j"=n_j, "n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_g"=n_g, "n_t"=n_t, "n_c"=n_c, "n_p"=n_p, "n_f"=n_f, "B_i"=B_i, "c_i"=c_i, "t_i"=tprime_i, "Y_j"=Y_j, "X_jk"=X_jk, "p_j"=p_j, "t_j"=tprime_j, "spde_aniso"=list(), "Ais_ij"=cbind(spatial_list$A_is@i,spatial_list$A_is@j), "Ais_x"=spatial_list$A_is@x, "Ags_ij"=cbind(spatial_list$A_gs@i,spatial_list$A_gs@j), "Ags_x"=spatial_list$A_gs@x )
+  }
+  if(Version%in%c("EOFR_v1_1_0")){
+    Return = list( "Cross_correlation"=Cross_correlation, "Constrain_orthogonality"=Constrain_orthogonality, "n_i"=n_i, "n_j"=n_j, "n_l"=n_l, "n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_g"=n_g, "n_t"=n_t, "n_c"=n_c, "n_p"=n_p, "n_f"=n_f, "B_i"=B_i, "c_i"=c_i, "t_i"=tprime_i, "l_i"=l_i, "Y_j"=Y_j, "X_jk"=X_jk, "p_j"=p_j, "t_j"=tprime_j, "spde_aniso"=list(), "Ais_ij"=cbind(spatial_list$A_is@i,spatial_list$A_is@j), "Ais_x"=spatial_list$A_is@x, "Ags_ij"=cbind(spatial_list$A_gs@i,spatial_list$A_gs@j), "Ags_x"=spatial_list$A_gs@x )
   }
   if( is.null(Return) ) stop("`Version` provided does not match the list of possible values")
   if( "spde_aniso" %in% names(Return) ) Return[['spde_aniso']] = list("n_s"=spatial_list$MeshList$anisotropic_spde$n.spde, "n_tri"=nrow(spatial_list$MeshList$anisotropic_mesh$graph$tv), "Tri_Area"=spatial_list$MeshList$Tri_Area, "E0"=spatial_list$MeshList$E0, "E1"=spatial_list$MeshList$E1, "E2"=spatial_list$MeshList$E2, "TV"=spatial_list$MeshList$TV-1, "G0"=spatial_list$MeshList$anisotropic_spde$param.inla$M0, "G0_inv"=INLA::inla.as.dgTMatrix(solve(spatial_list$MeshList$anisotropic_spde$param.inla$M0)) )

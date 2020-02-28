@@ -5,18 +5,20 @@
 \title{Build data input for VAST model}
 \usage{
 make_data(Version, B_i, Y_j, c_i, t_i, n_f, t_j, p_j, spatial_list,
-  Cross_correlation = TRUE, Constrain_orthogonality = FALSE,
-  CheckForErrors = TRUE, X_jk = matrix(0, nrow = length(Y_j), ncol =
-  0))
+  l_i = c_i, Cross_correlation = TRUE,
+  Constrain_orthogonality = FALSE, CheckForErrors = TRUE,
+  X_jk = matrix(0, nrow = length(Y_j), ncol = 0))
 }
 \arguments{
 \item{Version}{a version number (see example for current default).}
 
-\item{c_i}{Category (e.g., species, length-bin) for each observation i}
+\item{c_i}{Category (e.g., species, length-bin) for each observation i (running from 0 to number of categories minus 1)}
 
-\item{t_i}{Matrix where each row species the time for each observation i (if t_iz is a vector, it is coerced to a matrix with one column; if it is a matrix with two or more columns, it specifies multiple times for each observation, e.g., both year and season)}
+\item{t_i}{vector specifying time for each observation, e.g., year}
 
 \item{spatial_list}{tagged list of locatoinal information from , i.e., from \code{FishStatsUtils::make_spatial_info}}
+
+\item{l_i}{vector specifying which calibration factor is applied to a given observation  (running from 0 to number of categories minus 1); use NA if not calibrated.}
 
 \item{b_i}{Sampled biomass for each observation i}
 
