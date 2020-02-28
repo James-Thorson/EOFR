@@ -24,12 +24,12 @@ Imports:
     sp, 
     maps,
     mapdata,
-    TMB,
     abind,
     MatrixModels,  
     ThorsonUtilities,
     TMBhelper
 Depends:
+    TMB,
     R (>= 3.1.0),
 Suggests:
     testthat,
@@ -44,7 +44,7 @@ Remotes:
 License: GPL-3
 LazyData: yes
 BuildVignettes: yes
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 URL: http://github.com/James-Thorson/VAST
 BugReports: http://github.com/James-Thorson/VAST/issues
 VignetteBuilder: R.rsp

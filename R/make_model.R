@@ -81,6 +81,7 @@ function( TmbData, Version, spatial_list, Parameters="generate", Random="generat
   dyn.load( paste0(RunDir,"/",TMB::dynlib(Version)) ) # random=Random,
   Obj <- MakeADFun(data=TmbData, parameters=Parameters, hessian=FALSE, map=Map, random=Random, inner.method="newton", DLL=Version)  #
   Obj$control <- list(parscale=1, REPORT=1, reltol=1e-12, maxit=100)
+  Obj$env$beSilent()
 
   # Change convergence tolerance
   Obj$env$inner.control$step.tol <- c(1e-8,1e-12,1e-15)[1] # Default : 1e-8  # Change in parameters limit inner optimization
