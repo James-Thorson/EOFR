@@ -9,9 +9,9 @@ The EOFR package can be run e.g., using the following script.  While long, the m
 devtools::install_github("james-thorson/FishStatsUtils", ref="2.0.0" )
 devtools::install_github("james-thorson/EOFR", ref="development" ) # add your own value for auth_token from github
 
-setwd("D:/UW Hideaway (SyncBackFree)/Collaborations/2019 -- EOF regression")
+# Set working directory with write access on machine
+setwd("C:/Users/James.Thorson/Desktop/Work files/AFSC/2020-08 -- Frederic Maps query about EOFR")
 
-library(TMB)               # Can instead load library(TMBdebug)
 library(EOFR)
 
 ###########################
@@ -38,60 +38,43 @@ Aniso = FALSE
 # Load data
 ########################
 
-# Load stock-recruit data
-SpeciesCode = 'PCODEBS2016'
-R_tc = read.csv( paste0("Data/SARA download/R_tc.csv") )
-S_tc = read.csv( paste0("Data/SARA download/S_tc.csv") )
-Y_j = log( R_tc[,SpeciesCode] / S_tc[,SpeciesCode] )
-X_jk = matrix( S_tc[,SpeciesCode], ncol=1 ) / 1e6
-t_j = R_tc[,'X']
+data( EOFR_example )
 
-# Load EBS bottom temperature data
-BottomTemp = NULL
-for( t in 1982:2016 ){
-  Temp = read.table( file=paste0("Data/EBST/temp",t,".csv") )
-  BottomTemp = rbind( BottomTemp, cbind("Year"=t,Temp))
-}
-Data_Geostat = data.frame( "spp"=1, "Year"=BottomTemp[,"Year"], "Catch_KG"=BottomTemp[,"V3"], "AreaSwept_km2"=1, "Vessel"=0, "Lat"=BottomTemp[,"V2"], "Lon"=BottomTemp[,"V1"] )
-Data_Geostat[,'Lon'] = Data_Geostat[,'Lon'] - 360
-
-# Load surface temperature
-DF = read.csv( paste0("Data/SST/SST_DF.csv") )
-Data2 = data.frame( "spp"=2, "Year"=DF[,"Year"], "Catch_KG"=DF[,"SST"], "AreaSwept_km2"=1, "Vessel"=0, "Lat"=DF[,"Latitude"], "Lon"=DF[,"Longitude"] )
-Data2[,'Lon'] = Data2[,'Lon'] - 360
-Data2[,'spp'] = 2
-
-# Reduce down surface data to same footprint as EBS data
-NN = RANN::nn2( query=Data2[,c("Lat","Lon")], data=Data_Geostat[,c("Lat","Lon")], k=1 )
-Data2 = Data2[ which(NN$nn.dists <= 1), ]
-Data2 = Data2[ which(Data2[,'Year'] %in% unique(Data_Geostat[,'Year'])), ]
-
-# Combine
-Data_Geostat = rbind( Data_Geostat, Data2 )
+# Unpack contents
+Y_j = EOFR_example$stock_recruit_data[,'ln_recruits_per_spawning_biomass']
+X_jk = matrix( EOFR_example$stock_recruit_data[,'spawning_biomass'], ncol=1)
+t_j = EOFR_example$stock_recruit_data[,'year']
+Data_Geostat = EOFR_example$physical_data
 
 ##########################
 # Run model
 ##########################
 
 # Generate grid
-Extrapolation_List = make_extrapolation_info( Region=Region, strata.limits=strata.limits, observations_LL=Data_Geostat[,c("Lon","Lat")], input_grid=Grid, grid_dim_km=c(15,15), maximum_distance_from_sample=40 )
+Extrapolation_List = make_extrapolation_info( Region=Region, strata.limits=strata.limits,
+  observations_LL=cbind("Lon"=Data_Geostat[,"longitude"],"Lat"=Data_Geostat[,"latitude"]), input_grid=Grid, grid_dim_km=c(15,15),
+  maximum_distance_from_sample=40 )
 
 # Make spatial info
-Spatial_List = make_spatial_info( grid_size_km=1000, n_x=n_x, Method="Mesh", Lon=Data_Geostat[,'Lon'], Lat=Data_Geostat[,'Lat'], Extrapolation_List=Extrapolation_List, DirPath=DateFile, Save_Results=TRUE, fine_scale=TRUE )
+Spatial_List = make_spatial_info( grid_size_km=1000, n_x=n_x, Method="Mesh", Lon=Data_Geostat[,'longitude'],
+  Lat=Data_Geostat[,'latitude'], Extrapolation_List=Extrapolation_List, DirPath=DateFile, Save_Results=TRUE,
+  fine_scale=TRUE )
 
 # Build data
-TmbData = make_data("Version"=Version, "n_f"=n_f, "B_i"=Data_Geostat[,'Catch_KG'], "Y_j"=Y_j,  "X_jk"=X_jk,
-  "c_i"=as.numeric(Data_Geostat[,'spp'])-1, "p_j"=rep(0,length(Y_j)), "t_i"=as.numeric(Data_Geostat[,'Year']), "t_j"=t_j,
-  "spatial_list"=Spatial_List )
+TmbData = make_data("Version"=Version, "n_f"=n_f, "B_i"=Data_Geostat[,'response'], "Y_j"=Y_j,  "X_jk"=X_jk,
+  "c_i"=as.numeric(Data_Geostat[,'variable'])-1, "p_j"=rep(0,length(Y_j)),
+  "t_j"=match(t_j, sort(unique(c(Data_Geostat[,'year'],t_j)))),
+  "t_i"=match(Data_Geostat[,'year'], sort(unique(c(Data_Geostat[,'year'],t_j)))),
+  "l_i"=as.numeric(Data_Geostat[,'measurement'])-1, "spatial_list"=Spatial_List )
 
 # Build object
-  # dyn.load( paste0(DateFile,"/",TMB::dynlib(Version)) )
 TmbList = make_model("TmbData"=TmbData, "RunDir"=DateFile, "Version"=Version, "Aniso"=Aniso, "spatial_list"=Spatial_List )
 Obj = TmbList[["Obj"]]
 
 # Optimize
 Opt = TMBhelper::fit_tmb( obj=Obj, getsd=TRUE, newtonsteps=1, savedir=RunFile,
   control=list(eval.max=10000,iter.max=10000,trace=1) )
+# H = optimHess( par=Opt$par, fn=Obj$fn, gr=Obj$gr )
 
 # Summarize
 Report = Obj$report()
@@ -111,13 +94,13 @@ Report$Range_raw1 = Report$Range_raw2 = Report$Range_raw
 plot_anisotropy(FileName=paste0(RunFile,"Aniso.png"), Report=Report, TmbData=list(Options_vec=c(Aniso=Aniso),Options=NA) )
 
 # Indices
-Rot = Rotate_Fn(Cov_jj=NULL, L_pj=Report$L_tf, Psi=aperm(Report$epsiloninput_gcf,c(1,3,2)), RotationMethod="PCA", testcutoff=1e-4)
+Rot = rotate_factors(Cov_jj=NULL, L_pj=Report$L_tf, Psi=aperm(Report$epsiloninput_gcf,c(1,3,2)), RotationMethod="PCA", testcutoff=1e-4)
 for(zI in 1:2){
   ThorsonUtilities::save_fig( file=paste0(RunFile,"Factor_indices-",c("Original","Rotated")[zI]), width=4, height=4 )
     if(zI==1) Mat_tf = Report$L_tf
     if(zI==2) Mat_tf = Rot$L_pj_rot
     par( mar=c(2,2,0,0), mgp=c(1.5,0.5,0), tck=-0.02 )
-    matplot( y=Mat_tf, x=sort(unique(Data_Geostat[,'Year'])), type="l", col=c("black","blue","red"), lty="solid", lwd=2 )
+    matplot( y=Mat_tf, x=sort(unique(Data_Geostat[,'year'])), type="l", col=c("black","blue","red"), lty="solid", lwd=2 )
     legend("left", legend=paste0("Factor ",1:n_f), fill=c("black","blue","red"), bty="n" )
   dev.off()
 }
@@ -134,8 +117,6 @@ ThorsonUtilities::save_fig( file=paste0(RunFile,"Recruitment_correlation"), widt
 dev.off()
 
 # maps
-Cex = c(0.6,0.85,1.05)[3]
-Col = colorRampPalette(colors=c("darkblue","blue","lightblue","lightgreen","yellow","orange","red"))(1000)
 for( cI in 1:TmbData$n_c ){
   for(zI in 1:2){
     ThorsonUtilities::save_fig( file=paste0(RunFile,"Maps-",c("Original","Rotated")[zI],"-",cI), width=8, height=8 )
@@ -143,7 +124,7 @@ for( cI in 1:TmbData$n_c ){
       if(zI==2) Mat_sf = Rot$Psi_rot[,,cI]
       par( mfrow=c(2,2), mar=c(2,2,0,0), mgp=c(1.5,0.5,0), tck=-0.02 )
       for( fI in 1:TmbData$n_f ){
-        PlotMap_Fn( MappingDetails=MapDetails_List[["MappingDetails"]], xlab="", ylab="", Mat=Mat_sf[,fI,drop=FALSE], Format="", add=TRUE, PlotDF=MapDetails_List[["PlotDF"]], MapSizeRatio=MapDetails_List[["MapSizeRatio"]], Xlim=MapDetails_List[["Xlim"]], Ylim=MapDetails_List[["Ylim"]], FileName=paste0(RunFile,"Factor_maps--","Omega2"), Year_Set="", Rotate=MapDetails_List[["Rotate"]], zone=MapDetails_List[["Zone"]], pch=15, Cex=Cex, mfrow=c(1,1), Legend=MapDetails_List[["Legend"]], plot_legend_fig=TRUE, land_color="grey", Col=Col)
+        plot_variable( map_list=MapDetails_List, xlab="", ylab="", Y_gt=Mat_sf[,fI,drop=FALSE], Format="", add=TRUE )
         if(fI==1) mtext( side=3, text="Spatial map", line=0.5)
         axis(4)
         if(fI==3) axis(1)
