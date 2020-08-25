@@ -6,8 +6,8 @@ Package to conduct EOF regression
 The EOFR package can be run e.g., using the following script.  While long, the majority of the code is either settings, compiling data, or plotting, and each block of code is labeled:
 
 ```R
-devtools::install_github("james-thorson/FishStatsUtils", ref="2.0.0" )
-devtools::install_github("james-thorson/EOFR", ref="development" ) # add your own value for auth_token from github
+devtools::install_github("james-thorson/FishStatsUtils", ref="2.7.0" )
+devtools::install_github("james-thorson/EOFR", ref="development" )
 
 # Set working directory with write access on machine
 setwd("C:/Users/James.Thorson/Desktop/Work files/AFSC/2020-08 -- Frederic Maps query about EOFR")
